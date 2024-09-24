@@ -1,9 +1,9 @@
 <?php
 // Conexión a la base de datos
-$host = 'localhost';  // Cambia esto si es necesario
-$dbname = 'Steren';   // Nombre de la base de datos
-$username = 'root';   // Usuario de MySQL
-$password = '';       // Contraseña de MySQL
+$host = 'localhost';
+$dbname = 'Steren';
+$username = 'root';
+$password = '';
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
