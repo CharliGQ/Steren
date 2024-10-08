@@ -1,11 +1,13 @@
 <?php
 // Incluir la conexión a la base de datos
+include 'index.php';
 require_once 'db.php';
 
 // Definir la acción (crear, leer, actualizar, eliminar)
+// Si no se define una acción, se mostrará la lista de items de pedido por defecto
 $action = isset($_GET['action']) ? $_GET['action'] : 'read';
 
-// Incluir la cabecera HTML y la CDN de Bootstrap
+// Incluir la cabecera HTML y la CDN de Bootstrap para el estilo visual
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -13,41 +15,49 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'read';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>CRUD Items de Pedido</title>
-    <!-- Bootstrap CSS -->
+    <!-- Bootstrap CSS para el diseño responsivo y estilo-->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
 
 <div class="container mt-5">
     <?php
-    // Manejo de acciones
+    // Estructura de control para gestionar las acciones CRUD
     switch ($action) {
-        case 'create':
-            // Crear item del pedido
+        case 'create': // Acción para crear un nuevo item de pedido
+            // Si el método de solicitud es POST, procesamos el formulario
             if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+                // Recibir datos del formulario
                 $pedido_id = $_POST['pedido_id'];
                 $producto_id = $_POST['producto_id'];
                 $cantidad = $_POST['cantidad'];
                 $precio = $_POST['precio'];
 
-                // Validación básica
+                // Validación básica de los campos
                 if (empty($pedido_id) || empty($producto_id) || empty($cantidad) || empty($precio)) {
+                    // Mostrar un mensaje de error si hay campos vacíos
                     echo '<div class="alert alert-danger">Todos los campos son obligatorios.</div>';
                 } else {
                     try {
+                        // Insertar un nuevo item de pedido en la base de datos
                         $sql = "INSERT INTO items_pedido (pedido_id, producto_id, cantidad, precio) VALUES (?, ?, ?, ?)";
                         $stmt = $pdo->prepare($sql);
+                        // Ejecutar la consulta
                         if ($stmt->execute([$pedido_id, $producto_id, $cantidad, $precio])) {
+                            // Mostrar mensaje de éxito si se ejecuta correctamente
                             echo '<div class="alert alert-success">Item del pedido creado exitosamente.</div>';
                         } else {
+                            // Mostrar mensaje de error si la consulta falla
                             echo '<div class="alert alert-danger">Error al crear el item del pedido.</div>';
                         }
                     } catch (PDOException $e) {
+                        // Capturar y mostrar errores de la base de datos
                         echo '<div class="alert alert-danger">Error: ' . $e->getMessage() . '</div>';
                     }
                 }
             }
             ?>
+            <!-- Formulario para crear un nuevo item de pedido -->
             <h2 class="mb-4">Crear Item de Pedido</h2>
             <form method="POST" action="crud_items_pedido.php?action=create" class="bg-white p-4 shadow-sm rounded">
                 <div class="mb-3">
@@ -69,16 +79,18 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'read';
                 <button type="submit" class="btn btn-primary">Crear Item</button>
             </form>
             <br>
+            <!-- Botón para regresar a la lista de items -->
             <a href="crud_items_pedido.php" class="btn btn-secondary">Ver items</a>
             <?php
             break;
 
-        case 'read':
-            // Leer items del pedido
+        case 'read': // Acción para leer y mostrar todos los items
+            // Consultar todos los items de la base de datos
             $sql = "SELECT * FROM items_pedido";
             $stmt = $pdo->query($sql);
-            $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $items = $stmt->fetchAll(PDO::FETCH_ASSOC); // Obtener los resultados
             ?>
+            <!-- Mostrar la lista de items -->
             <h2 class="mb-4">Lista de Items de Pedido</h2>
             <a href="crud_items_pedido.php?action=create" class="btn btn-success mb-3">Crear Item</a>
             <table class="table table-striped table-hover">
@@ -101,7 +113,9 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'read';
                         <td><?php echo $item['cantidad']; ?></td>
                         <td><?php echo $item['precio']; ?></td>
                         <td>
+                            <!-- Botón para editar el item -->
                             <a href="crud_items_pedido.php?action=update&id=<?php echo $item['id']; ?>" class="btn btn-warning btn-sm">Editar</a>
+                            <!-- Botón para eliminar el item con confirmación -->
                             <a href="crud_items_pedido.php?action=delete&id=<?php echo $item['id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro?');">Eliminar</a>
                         </td>
                     </tr>
@@ -111,26 +125,32 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'read';
             <?php
             break;
 
-        case 'update':
-            // Actualizar item del pedido
+        case 'update': // Acción para actualizar un item
+            // Obtener el ID del item a editar
             $id = $_GET['id'];
+            // Consultar el item seleccionado
             $sql = "SELECT * FROM items_pedido WHERE id = ?";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$id]);
-            $item = $stmt->fetch(PDO::FETCH_ASSOC);
+            $item = $stmt->fetch(PDO::FETCH_ASSOC); // Obtener los datos del item
 
+            // Si el formulario es enviado
             if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+                // Obtener los valores del formulario
                 $pedido_id = $_POST['pedido_id'];
                 $producto_id = $_POST['producto_id'];
                 $cantidad = $_POST['cantidad'];
                 $precio = $_POST['precio'];
 
+                // Validación básica
                 if (empty($pedido_id) || empty($producto_id) || empty($cantidad) || empty($precio)) {
                     echo '<div class="alert alert-danger">Todos los campos son obligatorios.</div>';
                 } else {
                     try {
+                        // Actualizar el item en la base de datos
                         $sql = "UPDATE items_pedido SET pedido_id = ?, producto_id = ?, cantidad = ?, precio = ? WHERE id = ?";
                         $stmt = $pdo->prepare($sql);
+                        // Ejecutar la actualización
                         if ($stmt->execute([$pedido_id, $producto_id, $cantidad, $precio, $id])) {
                             echo '<div class="alert alert-success">Item actualizado exitosamente.</div>';
                         } else {
@@ -142,6 +162,7 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'read';
                 }
             }
             ?>
+            <!-- Formulario para editar un item de pedido -->
             <h2 class="mb-4">Editar Item de Pedido</h2>
             <form method="POST" action="crud_items_pedido.php?action=update&id=<?php echo $id; ?>" class="bg-white p-4 shadow-sm rounded">
                 <div class="mb-3">
@@ -163,16 +184,19 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'read';
                 <button type="submit" class="btn btn-primary">Actualizar Item</button>
             </form>
             <br>
+            <!-- Botón para regresar a la lista de items -->
             <a href="crud_items_pedido.php" class="btn btn-secondary">Ver items</a>
             <?php
             break;
 
-        case 'delete':
-            // Eliminar item del pedido
+        case 'delete': // Acción para eliminar un item
+            // Obtener el ID del item a eliminar
             $id = $_GET['id'];
             try {
+                // Eliminar el item de la base de datos
                 $sql = "DELETE FROM items_pedido WHERE id = ?";
                 $stmt = $pdo->prepare($sql);
+                // Si la eliminación es exitosa, redirigir a la página principal
                 if ($stmt->execute([$id])) {
                     header("Location: crud_items_pedido.php?action=read");
                     exit;
@@ -187,7 +211,8 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'read';
     ?>
 </div>
 
-<!-- Bootstrap JS -->
+<!-- Bootstrap JS para funcionalidades interactivas -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

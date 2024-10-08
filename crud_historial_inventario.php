@@ -1,5 +1,6 @@
 <?php
 // Incluir la conexión a la base de datos
+include 'index.php';
 require_once 'db.php';
 
 // Definir la acción (crear, leer, actualizar, eliminar)
@@ -20,21 +21,22 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'read';
 
 <div class="container mt-5">
     <?php
-    // Manejo de acciones
+    // Manejo de acciones basado en el valor de $action
     switch ($action) {
-        case 'create':
-            // Crear historial de inventario
+        case 'create': // Crear nuevo registro en el historial de inventario
             if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+                // Captura los datos del formulario
                 $producto_id = $_POST['producto_id'];
                 $cantidad_ajustada = $_POST['cantidad_ajustada'];
                 $tipo_ajuste = $_POST['tipo_ajuste'];
                 $descripcion = $_POST['descripcion'];
 
-                // Validación básica
+                // Validación básica: Verifica que los campos obligatorios no estén vacíos
                 if (empty($producto_id) || empty($cantidad_ajustada) || empty($tipo_ajuste)) {
                     echo '<div class="alert alert-danger">Todos los campos son obligatorios.</div>';
                 } else {
                     try {
+                        // Inserta el nuevo registro en la base de datos
                         $sql = "INSERT INTO historial_inventario (producto_id, cantidad_ajustada, tipo_ajuste, descripcion) VALUES (?, ?, ?, ?)";
                         $stmt = $pdo->prepare($sql);
                         if ($stmt->execute([$producto_id, $cantidad_ajustada, $tipo_ajuste, $descripcion])) {
@@ -43,11 +45,13 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'read';
                             echo '<div class="alert alert-danger">Error al registrar el ajuste de inventario.</div>';
                         }
                     } catch (PDOException $e) {
+                        // Muestra el mensaje de error en caso de fallo
                         echo '<div class="alert alert-danger">Error: ' . $e->getMessage() . '</div>';
                     }
                 }
             }
             ?>
+            <!-- Formulario para crear un nuevo ajuste de inventario -->
             <h2 class="mb-4">Agregar Ajuste de Inventario</h2>
             <form method="POST" action="crud_historial_inventario.php?action=create" class="bg-white p-4 shadow-sm rounded">
                 <div class="mb-3">
@@ -55,7 +59,7 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'read';
                     <select name="producto_id" class="form-select" required>
                         <option value="">Seleccione...</option>
                         <?php
-                        // Obtener productos para el select
+                        // Consultar la lista de productos para mostrar en el select
                         $sql = "SELECT id, nombre FROM productos";
                         $stmt = $pdo->query($sql);
                         $productos = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -88,8 +92,7 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'read';
             <?php
             break;
 
-        case 'read':
-            // Leer historial de inventario
+        case 'read': // Leer y mostrar el historial de inventario
             $sql = "SELECT hi.id, p.nombre AS producto_nombre, hi.cantidad_ajustada, hi.tipo_ajuste, hi.fecha_ajuste, hi.descripcion 
                     FROM historial_inventario hi 
                     JOIN productos p ON hi.producto_id = p.id";
@@ -120,6 +123,7 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'read';
                         <td><?php echo $registro['fecha_ajuste']; ?></td>
                         <td><?php echo $registro['descripcion']; ?></td>
                         <td>
+                            <!-- Botones para editar o eliminar un ajuste -->
                             <a href="crud_historial_inventario.php?action=update&id=<?php echo $registro['id']; ?>" class="btn btn-warning btn-sm">Editar</a>
                             <a href="crud_historial_inventario.php?action=delete&id=<?php echo $registro['id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro?');">Eliminar</a>
                         </td>
@@ -130,8 +134,7 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'read';
             <?php
             break;
 
-        case 'update':
-            // Actualizar historial de inventario
+        case 'update': // Actualizar un registro del historial de inventario
             $id = $_GET['id'];
             $sql = "SELECT * FROM historial_inventario WHERE id = ?";
             $stmt = $pdo->prepare($sql);
@@ -148,6 +151,7 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'read';
                     echo '<div class="alert alert-danger">Todos los campos son obligatorios.</div>';
                 } else {
                     try {
+                        // Actualiza el registro en la base de datos
                         $sql = "UPDATE historial_inventario SET producto_id = ?, cantidad_ajustada = ?, tipo_ajuste = ?, descripcion = ? WHERE id = ?";
                         $stmt = $pdo->prepare($sql);
                         if ($stmt->execute([$producto_id, $cantidad_ajustada, $tipo_ajuste, $descripcion, $id])) {
@@ -161,6 +165,7 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'read';
                 }
             }
             ?>
+            <!-- Formulario para editar un ajuste de inventario -->
             <h2 class="mb-4">Editar Ajuste de Inventario</h2>
             <form method="POST" action="crud_historial_inventario.php?action=update&id=<?php echo $id; ?>" class="bg-white p-4 shadow-sm rounded">
                 <div class="mb-3">
@@ -196,33 +201,36 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'read';
                 <button type="submit" class="btn btn-primary">Actualizar Ajuste</button>
             </form>
             <br>
-            <a href="crud_historial_inventario.php" class="btn btn-secondary">Volver a la lista</a>
+            <a href="crud_historial_inventario.php" class="btn btn-secondary">Ver historial de inventario</a>
             <?php
             break;
 
-        case 'delete':
-            // Eliminar historial de inventario
+        case 'delete': // Eliminar un registro del historial de inventario
             $id = $_GET['id'];
-            $sql = "DELETE FROM historial_inventario WHERE id = ?";
-            $stmt = $pdo->prepare($sql);
-            if ($stmt->execute([$id])) {
-                echo '<div class="alert alert-success">Ajuste de inventario eliminado exitosamente.</div>';
-            } else {
-                echo '<div class="alert alert-danger">Error al eliminar el ajuste de inventario.</div>';
+            try {
+                // Elimina el registro de la base de datos
+                $sql = "DELETE FROM historial_inventario WHERE id = ?";
+                $stmt = $pdo->prepare($sql);
+                if ($stmt->execute([$id])) {
+                    echo '<div class="alert alert-success">Ajuste de inventario eliminado exitosamente.</div>';
+                } else {
+                    echo '<div class="alert alert-danger">Error al eliminar el ajuste de inventario.</div>';
+                }
+            } catch (PDOException $e) {
+                echo '<div class="alert alert-danger">Error: ' . $e->getMessage() . '</div>';
             }
-            echo '<a href="crud_historial_inventario.php" class="btn btn-secondary">Volver a la lista</a>';
+            echo '<br><a href="crud_historial_inventario.php" class="btn btn-secondary">Ver historial de inventario</a>';
             break;
 
-        default:
-            // Acción no válida
-            echo '<div class="alert alert-danger">Acción no válida.</div>';
+        default: // Caso por defecto: Leer el historial de inventario
+            header('Location: crud_historial_inventario.php?action=read');
             break;
     }
     ?>
 </div>
 
-<!-- Bootstrap JS (opcional) -->
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
